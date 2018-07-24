@@ -1,11 +1,11 @@
-import requests, datetime, time
+import requests, datetime, time, json
 
 import csv_reader, email_google
 
 today = datetime.date.today()
 
-#token_file = open("D:\VM_Share\S1_api\S1_token.txt", 'r')
-token_file = open("C:\Users\Josh Thomason\Documents\Work\S1_token.txt", 'r')
+token_file = open("D:\VM_Share\S1_api\S1_token.txt", 'r')
+#token_file = open("C:\Users\Josh Thomason\Documents\Work\S1_token.txt", 'r')
 myToken = 'APIToken ' + token_file.read()
 head = {'Authorization': myToken}
 
@@ -13,7 +13,7 @@ head = {'Authorization': myToken}
 applications = requests.get("https://avx.sentinelone.net/web/api/v1.6/application-inventory?limit=7500", headers=head)
 #TODO run against a list of unapproved publishers/apps
 agents = requests.get("https://avx.sentinelone.net/web/api/v1.6/agents?limit=7500", headers=head)
-threats = requests.get("https://avx.sentinelone.net/web/api/v1.6/threats?limit=10", headers=head)
+threats = requests.get("https://avx.sentinelone.net/web/api/v1.6/threats?limit=1000", headers=head)
 #TODO actions on threats
 #TODO reports on threats that haven't been addressed
 device_pull = "https://avx.sentinelone.net/web/api/v1.6/agents/"
@@ -198,15 +198,45 @@ def threats_pull():
 	list = threats.json()
 	
 	#list of all threats
-	for x in range(0,1):
+	with open('threat_data.txt', 'w') as outfile:
+		json.dump(list, outfile)
+		outfile.close()
+	for x in range(0,1000):
 		try:
-			asset = requests.get(device_pull+list[x]['agent'], headers=head).json()
-			print(asset['network_information']['computer_name'])
-			print("\n")
-			print(list[x])
+			if list[x]['mitigation_status'] == 3:
+				asset = requests.get(device_pull+list[x]['agent'], headers=head).json()
+				#print(asset['network_information']['computer_name'])
+				threat_list.append((u'{0}, {1}, {2}, {3}, {4}'.format(asset['network_information']['computer_name'],
+															list[x]['mitigation_status'],
+															list[x]['username'],
+															list[x]['file_id']['display_name'],
+															list[x]['meta_data']['created_at'].split('T')[0]
+															)))
+			else:
+				continue
+			#print("\n")
+			#print(list[x])	
 		except:
 			continue
-	
+	print(threat_list)
 	raw_input("Press Enter to Continue...")
 	
 	return
+
+def manual_query():
+	
+	examples = """
+	https://avx.sentinelone.net/___________\n\n
+	
+	You are going to need to enter the API query manually, if you do not know the format for\n
+	your query, please visit https://avx.sentinelone.net/apidoc to learn more.\n\n
+	"""
+	print(examples)
+	query = raw_input("Enter your query: ")
+	
+	manual = requests.get("https://avx.sentinelone.net/" + query, headers = head)
+	
+	print(manual.json())
+	print(len(manual.json()))
+	
+	time.sleep(15)

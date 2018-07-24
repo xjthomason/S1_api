@@ -16,6 +16,8 @@ def menu():
 	1 - Agent Inventory
 	2 - Application Inventory
 	3 - Threats
+	4 - Manual Query
+	0 - Exit
 	
 	"""
 	
@@ -48,6 +50,17 @@ def main():
 			except Exception, e:
 				print e
 				next = False
+		elif r == '4':
+			try:
+				api_func.manual_query()
+			except Exception, e:
+				print e
+				next = False
+		elif r == '0':
+			print "Exiting program..."
+			time.sleep(1)
+			#sys.exit(0)
+			break
 		else:
 			print 'Invalid Entry'
 		

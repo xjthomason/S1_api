@@ -9,8 +9,8 @@ date = datetime.date.today()
 def send_email(address, file):
 	
 	gmail_user = 'joshua.thomason@avx.com'
-	ASP = open("C:\Users\Josh Thomason\Documents\Work\ASP.txt", 'r')
-	#ASP = open("", 'r')
+	#ASP = open("C:\Users\Josh Thomason\Documents\Work\ASP.txt", 'r')
+	ASP = open("D:\VM_Share\S1_api\ASP.txt", 'r')
 	gmail_password = ASP.read()
 	to = address#, 'bill@gmail.com']
 	subject = file.replace('.csv','')
