@@ -88,18 +88,23 @@ def agentCSV(list):
 def threatCSV(list):
 	
 	with open('Sentinel_One_Threats_Suspicious.csv', 'wb') as csvfile:
-		writer = csv.DictWriter(csvfile, fieldnames = ['Name','Status','Last User','Threat Name','Created'
+		writer = csv.DictWriter(csvfile, fieldnames = ['Name', 'Threat ID', 'Status','Last User','Threat Name', 
+													   'Hash', 'Created'
 													  ])
 		writer.writeheader()
 		for i in list:
 			computer_name = i.split(',')[0]
-			status = i.split(',')[1]
-			username = i.split(',')[2]
-			threat_name = i.split(',')[3]
-			created = i.split(',')[4]
+			threat_id = i.split(',')[1]
+			status = i.split(',')[2]
+			username = i.split(',')[3]
+			threat_name = i.split(',')[4]
+			threat_hash = i.split(',')[5]
+			created = i.split(',')[6]
 			
 			writer.writerow({'Name': computer_name.encode('utf-8'),
+							 'Threat ID': threat_id.encode('utf-8'),
 							 'Status': status.encode('utf-8'),
 							 'Last User': username.encode('utf-8'),
 							 'Threat Name': threat_name.encode('utf-8'),
+							 'Hash': threat_hash.encode('utf-8'),
 							 'Created': created.encode('utf-8')})

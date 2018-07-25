@@ -1,11 +1,11 @@
 import requests, datetime, time, json
 
-import csv_reader, email_google
+import csv_reader, email_google, virustotal
 
 today = datetime.date.today()
 
-token_file = open("S1_token.txt", 'r')
-#token_file = open("D:\VM_Share\S1_api\S1_token.txt", 'r')
+#token_file = open("S1_token.txt", 'r')
+token_file = open("D:\VM_Share\S1_api\S1_token.txt", 'r')
 #token_file = open("C:\Users\Josh Thomason\Documents\Work\S1_token.txt", 'r')
 myToken = 'APIToken ' + token_file.read()
 head = {'Authorization': myToken}
@@ -14,7 +14,7 @@ head = {'Authorization': myToken}
 applications = requests.get("https://avx.sentinelone.net/web/api/v1.6/application-inventory?limit=7500", headers=head)
 #TODO run against a list of unapproved publishers/apps
 agents = requests.get("https://avx.sentinelone.net/web/api/v1.6/agents?limit=7500", headers=head)
-threats = requests.get("https://avx.sentinelone.net/web/api/v1.6/threats?limit=1000", headers=head)
+threats = requests.get("https://avx.sentinelone.net/web/api/v1.6/threats?limit=10", headers=head)
 #TODO actions on threats
 #TODO reports on threats that haven't been addressed
 device_pull = "https://avx.sentinelone.net/web/api/v1.6/agents/"
@@ -194,6 +194,7 @@ def agents_inventory():
 
 def threats_pull():
 	
+	#TODO write VirusTotal function to pivot threat hash with automatic search in VirusTotal db
 	threat_list = []
 	list = []
 	list = threats.json()
@@ -207,19 +208,23 @@ def threats_pull():
 			if list[x]['mitigation_status'] == 3:
 				asset = requests.get(device_pull+list[x]['agent'], headers=head).json()
 				#print(asset['network_information']['computer_name'])
-				threat_list.append((u'{0}, {1}, {2}, {3}, {4}'.format(asset['network_information']['computer_name'],
+				threat_list.append((u'{0}, {1}, {2}, {3}, {4}, {5}, {6}'.format(asset['network_information']['computer_name'],
+															list[x]['id'],#threat id to pivot and POST automatic status change to S1
 															list[x]['mitigation_status'],
 															list[x]['username'],
 															list[x]['file_id']['display_name'],
+															list[x]['file_id']['content_hash'],
 															list[x]['meta_data']['created_at'].split('T')[0]
 															)))
+				virustotal.VT_fetch(list[x]['file_id']['content_hash'])
+				#print(list[x])
 			else:
 				continue
 			#print("\n")
 			#print(list[x])	
 		except:
 			continue
-	print(list)
+	#print(list)
 	raw_input("Press Enter to Continue...")
 	csv_reader.threatCSV(threat_list)
 	
