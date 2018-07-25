@@ -6,7 +6,8 @@ import api_func
 def menu():
 	
 	clear = os.system
-	clear('cls')
+	#clear('cls')
+	clear('clear')
 	
 	intro = """
 	AVX InfoSec - Sentinel One API Program

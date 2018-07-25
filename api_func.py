@@ -4,7 +4,8 @@ import csv_reader, email_google
 
 today = datetime.date.today()
 
-token_file = open("D:\VM_Share\S1_api\S1_token.txt", 'r')
+token_file = open("S1_token.txt", 'r')
+#token_file = open("D:\VM_Share\S1_api\S1_token.txt", 'r')
 #token_file = open("C:\Users\Josh Thomason\Documents\Work\S1_token.txt", 'r')
 myToken = 'APIToken ' + token_file.read()
 head = {'Authorization': myToken}
@@ -218,8 +219,9 @@ def threats_pull():
 			#print(list[x])	
 		except:
 			continue
-	print(threat_list)
+	print(list)
 	raw_input("Press Enter to Continue...")
+	csv_reader.threatCSV(threat_list)
 	
 	return
 
