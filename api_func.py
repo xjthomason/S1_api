@@ -1,6 +1,6 @@
 import requests, datetime, time, json
 
-import csv_reader, email_google, virustotal
+import csv_reader, email_google, virustotal, threats_func
 
 today = datetime.date.today()
 
@@ -14,7 +14,7 @@ head = {'Authorization': myToken}
 applications = requests.get("https://avx.sentinelone.net/web/api/v1.6/application-inventory?limit=7500", headers=head)
 #TODO run against a list of unapproved publishers/apps
 agents = requests.get("https://avx.sentinelone.net/web/api/v1.6/agents?limit=7500", headers=head)
-threats = requests.get("https://avx.sentinelone.net/web/api/v1.6/threats?limit=10", headers=head)
+threats = requests.get("https://avx.sentinelone.net/web/api/v1.6/threats?limit=5000", headers=head)
 #TODO actions on threats
 #TODO reports on threats that haven't been addressed
 device_pull = "https://avx.sentinelone.net/web/api/v1.6/agents/"
@@ -194,6 +194,13 @@ def agents_inventory():
 
 def threats_pull():
 	
+	try:
+		d = int(input("Enter threat date range(in days), leave blank if you want it to error out: "))
+	except:
+		d = 0
+	week_ago = unicode(today - datetime.timedelta(days=d))
+	print(week_ago)
+	
 	#TODO write VirusTotal function to pivot threat hash with automatic search in VirusTotal db
 	threat_list = []
 	list = []
@@ -205,25 +212,53 @@ def threats_pull():
 		outfile.close()
 	for x in range(0,1000):
 		try:
-			if list[x]['mitigation_status'] == 3:
+			if (
+				list[x]['meta_data']['created_at'] <= week_ago 
+				and list[x]['resolved'] == False
+				):
 				asset = requests.get(device_pull+list[x]['agent'], headers=head).json()
-				#print(asset['network_information']['computer_name'])
-				threat_list.append((u'{0}, {1}, {2}, {3}, {4}, {5}, {6}'.format(asset['network_information']['computer_name'],
-															list[x]['id'],#threat id to pivot and POST automatic status change to S1
-															list[x]['mitigation_status'],
-															list[x]['username'],
-															list[x]['file_id']['display_name'],
-															list[x]['file_id']['content_hash'],
-															list[x]['meta_data']['created_at'].split('T')[0]
-															)))
-				virustotal.VT_fetch(list[x]['file_id']['content_hash'])
+				threat_list.append((u'{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}'.format(asset['network_information']['computer_name'],
+																list[x]['id'],#threat id to pivot and POST automatic status change to S1
+																list[x]['mitigation_status'],
+																list[x]['resolved'],
+																list[x]['username'],
+																list[x]['file_id']['display_name'],
+																list[x]['file_id']['content_hash'],
+																list[x]['meta_data']['created_at'].split('T')[0]
+																)))
+			#if list[x]['mitigation_status'] == 3:
+				#asset = requests.get(device_pull+list[x]['agent'], headers=head).json()
+				##print(asset['network_information']['computer_name'])
+				#threat_list.append((u'{0}, {1}, {2}, {3}, {4}, {5}, {6}'.format(asset['network_information']['computer_name'],
+															#list[x]['id'],#threat id to pivot and POST automatic status change to S1
+															#list[x]['mitigation_status'],
+															#list[x]['username'],
+															#list[x]['file_id']['display_name'],
+															#list[x]['file_id']['content_hash'],
+															#list[x]['meta_data']['created_at'].split('T')[0]
+															#)))
+				#virustotal.VT_fetch(list[x]['file_id']['content_hash'])
 				#print(list[x])
 			else:
 				continue
 			#print("\n")
 			#print(list[x])	
-		except:
+		except Exception, e:
+			print e
 			continue
+	mitigate = raw_input("Do you want to resolve these %s threats? (Y\N)" % len(threat_list))
+	if mitigate == 'Y' or mitigate == 'y':
+		for t in threat_list:
+			#print(t.split(',')[3].lstrip(' '))
+			if t.split(',')[3].lstrip(' ') == 'False':
+				threats_func.resolve(t.split(',')[1])
+			else:
+				print("Threat already resolved...")
+				continue
+	elif mitigate == 'N' or mitigate == 'n':
+		return
+	else:
+		return
 	#print(list)
 	raw_input("Press Enter to Continue...")
 	csv_reader.threatCSV(threat_list)
