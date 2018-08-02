@@ -4,8 +4,8 @@ import csv_reader, smartsheet_api
 
 today = datetime.date.today()
 
-#token_file = open("S1_token.txt", 'r')
-token_file = open("D:\VM_Share\S1_api\S1_token.txt", 'r')
+token_file = open("S1_token.txt", 'r')
+#token_file = open("D:\VM_Share\S1_api\S1_token.txt", 'r')
 #token_file = open("C:\Users\Josh Thomason\Documents\Work\S1_token.txt", 'r')
 myToken = 'APIToken ' + token_file.read()
 head = {'Authorization': myToken}

@@ -1,7 +1,7 @@
 import smartsheet, requests, groups
 
-#token_file = open("S1_token.txt", 'r')
-token_file = open("D:\VM_Share\S1_api\Smart_token.txt", 'r')
+token_file = open("Smart_token.txt", 'r')
+#token_file = open("D:\VM_Share\S1_api\Smart_token.txt", 'r')
 #token_file = open("C:\Users\Josh Thomason\Documents\Work\S1_token.txt", 'r')
 myToken = token_file.read()#'Bearer ' + token_file.read()
 head = {'Authorization': myToken}
@@ -28,6 +28,32 @@ groups_to_ignore = [
 				   ]
 
 ss_client = smartsheet.Smartsheet(myToken)
+
+def ss_cell_update(counts, site_row_id):
+	
+	# New Row and Cell Value
+	new_cell = ss_client.models.Cell()
+	new_cell.column_id = column_id
+	new_row = ss_client.models.Row()
+	
+	try:
+		
+		new_cell.value = str(counts)
+		new_cell.strict = False
+		
+		new_row.id = site_row_id
+		new_row.cells.append(new_cell)
+		
+		updated_row = ss_client.Sheets.update_rows(
+			4408105728534404,
+			[new_row])
+		#print("Ethertronics updated!")
+	
+	except Exception, e:
+		
+		print(e)
+		
+	return
 
 def update(list):
 	global column_id
@@ -81,37 +107,16 @@ def update(list):
 	except Exception, e:
 		print(e)
 	
-	# New Row and Cell Value
-	new_cell = ss_client.models.Cell()
-	new_cell.column_id = column_id
-	new_row = ss_client.models.Row()
-	
 	# Ethertronics
 	try:
-		new_cell.value = str(eth_agent_count)
-		new_cell.strict = False
-		
-		new_row.id = 8607108786612100
-		new_row.cells.append(new_cell)
-		
-		updated_row = ss_client.Sheets.update_rows(
-			4408105728534404,
-			[new_row])
+		ss_cell_update(eth_agent_count, 8607108786612100)
 		print("Ethertronics updated!")
 	except Exception, e:
 		print(e)
 	
 	# Coleraine
 	try:
-		new_cell.value = str(col_agent_count)
-		new_cell.strict = False
-		
-		new_row.id = 7199733903058820
-		new_row.cells.append(new_cell)
-		
-		updated_row = ss_client.Sheets.update_rows(
-			4408105728534404,
-			[new_row])
+		ss_cell_update(col_agent_count, 7199733903058820)
 		print("Coleraine updated!")
 	except Exception, e:
 		print(e)
