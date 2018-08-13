@@ -66,13 +66,14 @@ def agentCSV(list):
 			os_version = i.split(',')[2]
 			network_status = i.split(',')[3]
 			group_id = i.split(',')[5].lstrip(' ')
-			domain = i.split(',')[4]
+			domain = i.split(',')[4].lstrip(' ')
 			IP = i.split(',')[6]
 			last_user = i.split(',')[7]
 			created = i.split(',')[8]
 			group = groups.S1_group(group_id)
 			
-			writer.writerow({'Asset Name': computer_name, 
+			if group == 'Default group':
+				writer.writerow({'Asset Name': computer_name, 
 							 'OS Name': os_name,
 							 'OS Version': os_version,
 							 'Network Status': network_status,
@@ -81,6 +82,7 @@ def agentCSV(list):
 							 'IP Address': IP,
 							 'Last User': last_user, 
 							 'Created Date': created})
+			
 	
 	filename = 'Sentinel_One_Update_%s.csv' % today
 	return filename

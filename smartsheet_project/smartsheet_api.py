@@ -1,16 +1,30 @@
-import smartsheet, requests, groups
+import smartsheet, requests, groups, json, datetime
 
-token_file = open("Smart_token.txt", 'r')
-#token_file = open("D:\VM_Share\S1_api\Smart_token.txt", 'r')
+today = datetime.date.today()
+week_ago = unicode(today - datetime.timedelta(days=7))
+
+# Tokens
+#token_file = open("Smart_token.txt", 'r')
+token_file = open("D:\VM_Share\S1_api\Smart_token.txt", 'r')
 #token_file = open("C:\Users\Josh Thomason\Documents\Work\S1_token.txt", 'r')
 myToken = token_file.read()#'Bearer ' + token_file.read()
 head = {'Authorization': myToken}
 
+# API URL for Sentinel One Milestones Sheet
 smart_url = "https://api.smartsheet.com/2.0/sheets/4408105728534404"
-group_url = "https://api.sentinelone.com/web/api/v1.6/agents/count-by-filters"
-column_id = 5399751895082884
+
+# Sheet IDs
+S1_sheet_id = 4408105728534404
+
+# Column IDs; one for agent count update and the other for checking update request statuses
+actual_column_id = 5399751895082884
+upd_column_id = 8172835916015492
+total_column_id = 3697320274487172
+comments_column_id = 7178495420852100
+
+# DICTS AND LISTS
 row_ids = {
-		  'ETHER': 8607108786612100,
+		  ('ETHER', 'WORKGROUP'): 8607108786612100,
 		  ('AVXEUR','Coleraine', 'Frimley'): 7199733903058820,
 		  'GV': 'test',
 		  'Workgroup': 'workgroup',
@@ -19,17 +33,31 @@ row_ids = {
 		  'Penang': 7055697879820164,
 		  'St. Apollinaire': 8181597786662788,
 		  'Lanskroun': 7618647833241476,
-		  'Timisoara': 4419062017091460
+		  'S&C': 8347603171600260
 		  }
 groups_to_ignore = [
 				   'Default group',
-				   'Greenville (Servers)',
-				   'CDC Sever'
+				   'SQL Servers',
+				   'CDC Server'
 				   ]
+email_upd_dict = {
+			'nathan.wilder@avx.com': 4103509159241604,
+			'james.taggert@avx.com': 2696134275688324,
+			'andreas.kielmann@avx.com': 3959473136002948,
+			'Mandy.Guenzel@abelektronik.com ': 3844003544229764
+			 }
+email_send_dict = {
+			'nathan.wilder@avx.com': 8607108786612100,
+			'james.taggert@avx.com': 7199733903058820,
+			'Mandy.Guenzel@abelektronik.com': 8347603171600260,
+			'mandy.guenzel@avx.com': 8347603171600260,
+			'joshua.thomason@avx.com': 4885242337093508
+			 }
 
+# Smartsheet init
 ss_client = smartsheet.Smartsheet(myToken)
 
-def ss_cell_update(counts, site_row_id):
+def ss_cell_update(input, column_id, site_row_id):
 	
 	# New Row and Cell Value
 	new_cell = ss_client.models.Cell()
@@ -38,14 +66,14 @@ def ss_cell_update(counts, site_row_id):
 	
 	try:
 		
-		new_cell.value = str(counts)
+		new_cell.value = str(input)
 		new_cell.strict = False
 		
 		new_row.id = site_row_id
 		new_row.cells.append(new_cell)
 		
 		updated_row = ss_client.Sheets.update_rows(
-			4408105728534404,
+			S1_sheet_id,
 			[new_row])
 		#print("Ethertronics updated!")
 	
@@ -71,55 +99,57 @@ def update(list):
 			
 			asset = S1_asset.split(',')[0].lstrip(' ')
 			domain = S1_asset.split(',')[1].lstrip(' ')
-			group_id = S1_asset.split(',')[2].lstrip(' ')
-			group = groups.S1_group(group_id)		
+			group = S1_asset.split(',')[2].lstrip(' ')
 		
 			if group in groups_to_ignore:
-				if 'ETHER' in domain:
+				if 'ETHER' in domain or 'WORKGROUP' in domain:
 					#print("Here in Ethertronics...")
 					eth_agent_count += 1
 				elif 'AVXEUR' in domain:
 					col_agent_count += 1
 				elif 'GV' in domain:
 					gv_agent_count += 1
+				elif 'GLOBAL' in domain:
+					SAC_agent_count +=1
 				else:
 					unk_agents.append((u'{0}, {1}, {2}'.format(asset,
 															   domain,
 															   group)))
-				#try:
-					#ss_row_id = next(v for k, v in row_ids.items() if domain in k)
-				#except:
-					#continue
 			else:
 				if 'Coleraine' in group or 'Frimley' in group:
 					#print("Here in Coleraine...")
 					col_agent_count += 1
 				elif 'Timisoara' in group:
 					SAC_agent_count += 1
+				elif 'Ethertronics' in group:
+					eth_agent_count += 1
 				else:
 					unk_agents.append((u'{0}, {1}, {2}'.format(asset,
 															   domain,
 															   group)))
-				#try:
-					#ss_row_id = next(v for k, v in row_ids.items() if group in k)
-				#except:
-					#continue
 	except Exception, e:
 		print(e)
 	
 	# Ethertronics
 	try:
-		ss_cell_update(eth_agent_count, 8607108786612100)
+		ss_cell_update(eth_agent_count, actual_column_id, 8607108786612100)
 		print("Ethertronics updated!")
 	except Exception, e:
 		print(e)
 	
 	# Coleraine
 	try:
-		ss_cell_update(col_agent_count, 7199733903058820)
+		ss_cell_update(col_agent_count, actual_column_id, 7199733903058820)
 		print("Coleraine updated!")
 	except Exception, e:
 		print(e)
+	
+	# S&C
+	try:
+		ss_cell_update(SAC_agent_count, actual_column_id, 8347603171600260)
+		print("S&C updated!")
+	except Exception, e:
+		print(e)		
 	
 	#print(eth_agent_count)
 	#print(col_agent_count)
@@ -143,7 +173,59 @@ def update(list):
 	#except Exception, e:
 		#print(e)
 		#print("done")
-	
+	raw_input("press enter to continue..")
 	return
+
+def delete_requests(request_id):
+	
+	ss_client.Sheets.delete_update_request(S1_sheet_id, request_id)
+	
+def send_ss_update_request(email, subject):
+	
+	try:
+		email_spec = ss_client.models.MultiRowEmail()
+		email_spec.sent_to = [
+			ss_client.models.Recipient({'email': email})
+			]
+		email_spec.subject = subject
+		email_spec.message = "Hello,\n\nPlease update the sheet for the ongoing Sentinel One project.\n\nThanks,\n\nJoshua Thomason"
+		email_spec.cc_me = True
+		email_spec.row_ids = [email_send_dict[email]]
+		email_spec.column_ids = [total_column_id, comments_column_id]
+		
+		new_update_request = ss_client.Sheets.send_update_request(
+			S1_sheet_id,
+			email_spec
+			)
+	except Exception, e:
+		print(e)
+		
+def update_requests():
+	global week_ago
+	
+	#TODO if pending and over 7 days old | send new update request
+	response = ss_client.Sheets.list_sent_update_requests(S1_sheet_id)
+	json_resp = json.loads(str(response))
+
+	for x in range(0, 10):
+		try:
+			upd_reqs = json_resp['data'][x]
+			if upd_reqs['status'] == 'PENDING':
+				if upd_reqs['sentAt'] <= week_ago:
+					#print("Delete this %s request" % upd_reqs['updateRequestId'])
+					delete_requests(upd_reqs['updateRequestId'])
+					send_ss_update_request(upd_reqs['sentTo']['email'], upd_reqs['subject'])
+				else:
+					ss_cell_update('Y', upd_column_id, email_upd_dict[upd_reqs['sentTo']['email']])
+			elif upd_reqs['status'] == 'COMPLETED':
+				ss_cell_update('N', upd_column_id, email_upd_dict[upd_reqs['sentTo']['email']])
+			else:
+				continue
+		except:
+			continue
+	
+#update_requests()
+
+send_ss_update_request('joshua.thomason@avx.com', 'Test')
 
 #update()

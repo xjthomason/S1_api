@@ -1,11 +1,11 @@
-import requests, datetime, time, json
+import requests, datetime, time
 
-import csv_reader, smartsheet_api
+import csv_reader, smartsheet_api, groups
 
 today = datetime.date.today()
 
-token_file = open("S1_token.txt", 'r')
-#token_file = open("D:\VM_Share\S1_api\S1_token.txt", 'r')
+#token_file = open("S1_token.txt", 'r')
+token_file = open("D:\VM_Share\S1_api\S1_token.txt", 'r')
 #token_file = open("C:\Users\Josh Thomason\Documents\Work\S1_token.txt", 'r')
 myToken = 'APIToken ' + token_file.read()
 head = {'Authorization': myToken}
@@ -34,12 +34,13 @@ def agents_inventory():
 	list = []
 	list = agents.json()
 	
+	print("Gathering agent info from Sentinel One...")
 	for x in range(0,7500):
 		try:
 			if list[x]['meta_data']['created_at'] >= week_ago:
 				agents_S1.append((u'{0}, {1}, {2}'.format(list[x]['network_information']['computer_name'],
 													 list[x]['network_information']['domain'],
-													 list[x]['group_id']
+													 groups.S1_group(list[x]['group_id'])
 													)))
 			else:
 				continue
@@ -69,4 +70,10 @@ def agents_inventory():
 		print('Okay...')
 	else:
 		return
-	time.sleep(10)
+	
+	smup = raw_input("Update requests (Y/N)?: ")
+	if sm == 'Y' or sm == 'y':
+		smartsheet_api.update_requests()
+	elif sm == 'N' or sm == 'n':
+		print('Okay...')
+	#time.sleep(10)

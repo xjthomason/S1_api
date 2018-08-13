@@ -1,6 +1,6 @@
 import requests, datetime, time, json
 
-import csv_reader, email_google, virustotal, threats_func
+import csv_reader, email_google, virustotal, threats_func, smartsheet
 
 today = datetime.date.today()
 
@@ -18,6 +18,7 @@ threats = requests.get("https://avx.sentinelone.net/web/api/v1.6/threats?limit=5
 #TODO actions on threats
 #TODO reports on threats that haven't been addressed
 device_pull = "https://avx.sentinelone.net/web/api/v1.6/agents/"
+add_group_ether = "https://avx.sentinelone.net/web/api/v1.6/groups/5b645a9c73758c2a87442c38/add-agents?computer_name__like="
 #TODO run query on device id based on return from threat call
 
 
@@ -177,7 +178,20 @@ def agents_inventory():
 				break
 	else:
 		print("Invalid...")
-	
+		
+	a = raw_input("Move agents to Ethertronics group (Y/N)?: ")
+	if a == 'Y' or a == 'y':
+		for x in range(0,300):
+			try:
+				if agents_S1[x].split(',')[5].lstrip(' ') == '5a737c6a61e35524b8fed5ee':
+					add_ether = requests.put(add_group_ether + agents_S1[x].split(',')[0], headers=head)
+					print(agents_S1[x].split(',')[0] + " Successfully added!")
+			except:
+				continue
+	elif a == 'N' or a == 'n':
+		print('Okay...')
+	else:
+		return
 	
 	print("Creating .csv for all agents in this instance created %d days ago..." % d)
 	filename = csv_reader.agentCSV(agents_S1)
@@ -188,9 +202,10 @@ def agents_inventory():
 		address = raw_input("Enter an email address: ")
 		email_google.send_email(address, filename)
 	elif e == 'N' or e == 'n':
-		return
+		print('Okay...')
 	else:
 		return
+
 
 def threats_pull():
 	
@@ -199,7 +214,7 @@ def threats_pull():
 	except:
 		d = 0
 	week_ago = unicode(today - datetime.timedelta(days=d))
-	print(week_ago)
+	#print(week_ago)
 	
 	#TODO write VirusTotal function to pivot threat hash with automatic search in VirusTotal db
 	threat_list = []
@@ -213,8 +228,9 @@ def threats_pull():
 	for x in range(0,1000):
 		try:
 			if (
-				list[x]['meta_data']['created_at'] <= week_ago 
+				list[x]['meta_data']['created_at'] >= week_ago 
 				and list[x]['resolved'] == False
+				and list[x]['mitigation_status'] == 0
 				):
 				asset = requests.get(device_pull+list[x]['agent'], headers=head).json()
 				threat_list.append((u'{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}'.format(asset['network_information']['computer_name'],
@@ -226,6 +242,7 @@ def threats_pull():
 																list[x]['file_id']['content_hash'],
 																list[x]['meta_data']['created_at'].split('T')[0]
 																)))
+				print(asset['network_information']['computer_name'])
 			#if list[x]['mitigation_status'] == 3:
 				#asset = requests.get(device_pull+list[x]['agent'], headers=head).json()
 				##print(asset['network_information']['computer_name'])
