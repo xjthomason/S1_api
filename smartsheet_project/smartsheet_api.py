@@ -10,6 +10,8 @@ token_file = open("D:\VM_Share\S1_api\Smart_token.txt", 'r')
 myToken = token_file.read()#'Bearer ' + token_file.read()
 head = {'Authorization': myToken}
 
+update_request_message = "Hello,\n\nPlease update the sheet for the ongoing Sentinel One project.\n\nThanks,\n\nJoshua Thomason"
+
 # API URL for Sentinel One Milestones Sheet
 smart_url = "https://api.smartsheet.com/2.0/sheets/4408105728534404"
 
@@ -51,7 +53,7 @@ email_send_dict = {
 			'james.taggert@avx.com': 7199733903058820,
 			'Mandy.Guenzel@abelektronik.com': 8347603171600260,
 			'mandy.guenzel@avx.com': 8347603171600260,
-			'joshua.thomason@avx.com': 4885242337093508
+			'joshua.thomason@avx.com': 7612545496311684
 			 }
 
 # Smartsheet init
@@ -180,23 +182,25 @@ def delete_requests(request_id):
 	
 	ss_client.Sheets.delete_update_request(S1_sheet_id, request_id)
 	
-def send_ss_update_request(email, subject):
+def send_ss_update_request(email):
+	global update_request_message
+	
+	update_request_payload = {"sendTo": [
+			{"email": email}
+			],
+			"subject": "SentinelOne Update",
+			"message": update_request_message,
+			"ccMe": True,
+			"rowIds": [email_send_dict[email]],
+			"columnIds": [3697320274487172, 7178495420852100],
+			"includeAttachments": False,
+			"includeDiscussions": False
+			}
 	
 	try:
-		email_spec = ss_client.models.MultiRowEmail()
-		email_spec.sent_to = [
-			ss_client.models.Recipient({'email': email})
-			]
-		email_spec.subject = subject
-		email_spec.message = "Hello,\n\nPlease update the sheet for the ongoing Sentinel One project.\n\nThanks,\n\nJoshua Thomason"
-		email_spec.cc_me = True
-		email_spec.row_ids = [email_send_dict[email]]
-		email_spec.column_ids = [total_column_id, comments_column_id]
-		
-		new_update_request = ss_client.Sheets.send_update_request(
-			S1_sheet_id,
-			email_spec
-			)
+		email_ss_send = requests.post(smart_url + "/updaterequests",
+									headers=head,
+									data=json.dumps(update_request_payload))
 	except Exception, e:
 		print(e)
 		
@@ -207,14 +211,15 @@ def update_requests():
 	response = ss_client.Sheets.list_sent_update_requests(S1_sheet_id)
 	json_resp = json.loads(str(response))
 
-	for x in range(0, 10):
+	for x in range(0, 50):
 		try:
 			upd_reqs = json_resp['data'][x]
 			if upd_reqs['status'] == 'PENDING':
 				if upd_reqs['sentAt'] <= week_ago:
 					#print("Delete this %s request" % upd_reqs['updateRequestId'])
 					delete_requests(upd_reqs['updateRequestId'])
-					send_ss_update_request(upd_reqs['sentTo']['email'], upd_reqs['subject'])
+					send_ss_update_request(upd_reqs['sentTo']['email'])
+					ss_cell_update('Y', upd_column_id, email_upd_dict[upd_reqs['sentTo']['email']])
 				else:
 					ss_cell_update('Y', upd_column_id, email_upd_dict[upd_reqs['sentTo']['email']])
 			elif upd_reqs['status'] == 'COMPLETED':
@@ -226,6 +231,6 @@ def update_requests():
 	
 #update_requests()
 
-send_ss_update_request('joshua.thomason@avx.com', 'Test')
+#send_ss_update_request('joshua.thomason@avx.com', 'Test')
 
 #update()

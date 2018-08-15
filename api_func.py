@@ -230,7 +230,7 @@ def threats_pull():
 			if (
 				list[x]['meta_data']['created_at'] >= week_ago 
 				and list[x]['resolved'] == False
-				and list[x]['mitigation_status'] == 0
+				and list[x]['mitigation_status'] == 3
 				):
 				asset = requests.get(device_pull+list[x]['agent'], headers=head).json()
 				threat_list.append((u'{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}'.format(asset['network_information']['computer_name'],
