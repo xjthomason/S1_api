@@ -4,8 +4,8 @@ today = datetime.date.today()
 week_ago = unicode(today - datetime.timedelta(days=7))
 
 # Tokens
-#token_file = open("Smart_token.txt", 'r')
-token_file = open("D:\VM_Share\S1_api\Smart_token.txt", 'r')
+token_file = open("Smart_token.txt", 'r')
+#token_file = open("D:\VM_Share\S1_api\Smart_token.txt", 'r')
 #token_file = open("C:\Users\Josh Thomason\Documents\Work\S1_token.txt", 'r')
 myToken = token_file.read()#'Bearer ' + token_file.read()
 head = {'Authorization': myToken}
@@ -121,10 +121,12 @@ def update(list):
 				if 'Coleraine' in group or 'Frimley' in group:
 					#print("Here in Coleraine...")
 					col_agent_count += 1
-				elif 'Timisoara' in group:
+				elif 'TSC' in group:
 					SAC_agent_count += 1
 				elif 'Ethertronics' in group:
 					eth_agent_count += 1
+				elif 'Greenville' in group or 'InfoSec' in group:
+					gv_agent_count += 1					
 				else:
 					unk_agents.append((u'{0}, {1}, {2}'.format(asset,
 															   domain,
@@ -151,7 +153,14 @@ def update(list):
 		ss_cell_update(SAC_agent_count, actual_column_id, 8347603171600260)
 		print("S&C updated!")
 	except Exception, e:
-		print(e)		
+		print(e)
+	
+	# Greenville
+	try:
+		ss_cell_update(gv_agent_count, actual_column_id, 6286915376834436)
+		print("Greenville updated!")
+	except Exception, e:
+		print(e)	
 	
 	#print(eth_agent_count)
 	#print(col_agent_count)
